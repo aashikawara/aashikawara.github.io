@@ -673,10 +673,19 @@ function generateAndBuildGallery(scene, userMedia) {
             });
 
             // Advance Position to end of turn (start of next corridor)
-            if (currentDirIdx === 0) currentZ = turnCenterZ - 10;
-            else if (currentDirIdx === 1) currentX = turnCenterX + 10;
-            else if (currentDirIdx === 2) currentZ = turnCenterZ + 10;
-            else currentX = turnCenterX - 10;
+            if (currentDirIdx === 0) {
+                currentZ = turnCenterZ - 10;
+                currentX = turnCenterX;
+            } else if (currentDirIdx === 1) {
+                currentX = turnCenterX + 10;
+                currentZ = turnCenterZ;
+            } else if (currentDirIdx === 2) {
+                currentZ = turnCenterZ + 10;
+                currentX = turnCenterX;
+            } else { // 3
+                currentX = turnCenterX - 10;
+                currentZ = turnCenterZ;
+            }
         } else {
             // Last Chunk? Cap the end.
             // End wall at current Position + epsilon?
