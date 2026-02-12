@@ -20,24 +20,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build
         run: npm run build
-        
+
+      # I added this step to see what folders actually exist
+      - name: List files (Debug)
+        run: ls -la
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Change 'build' to 'dist' if you are using Vite/Vue
-          path: ./build
+          # 👇 CHANGED THIS FROM './build' TO './dist'
+          path: ./dist
 
   deploy:
     environment:
