@@ -142,6 +142,36 @@ button:active {
 
 #yes-btn {
   background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
+  animation: heartbeat 1.5s infinite;
+  box-shadow: 0 0 15px rgba(0, 201, 255, 0.6);
+}
+
+@keyframes heartbeat {
+  0% {
+    transform: scale(1);
+  }
+
+  15% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(0, 201, 255, 0.8);
+  }
+
+  30% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(0, 201, 255, 0.8);
+  }
+
+  60% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 #no-btn {
@@ -459,15 +489,29 @@ button:active {
     box-shadow: 0 4px 15px rgba(0, 201, 255, 0.4);
   }
 
-  .error-msg {
-    color: #ff4757;
-    font-size: 0.9rem;
-    margin-top: -10px;
-    font-weight: 500;
-    animation: shake 0.5s;
-  }
-
   margin-bottom: 4px;
+}
+
+/* Success Validation Animation */
+.styled-input.success {
+  border-color: #92FE9D !important;
+  box-shadow: 0 0 15px rgba(146, 254, 157, 0.5) !important;
+  background: rgba(146, 254, 157, 0.1) !important;
+  transition: all 0.3s ease;
+}
+
+.error-msg.hidden {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.error-msg {
+  color: #ff4757;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  font-weight: 500;
+  min-height: 1.2em;
 }
 
 .label-location {

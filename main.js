@@ -183,11 +183,20 @@ document.querySelectorAll('.submit-question-btn').forEach(button => {
             if (errorMsg) errorMsg.classList.add('hidden');
 
             if (questionContent && quoteSection) {
-                questionContent.classList.add('hidden-content');
-                quoteSection.classList.remove('hidden-content');
+                // Success Animation
+                input.classList.add('success');
+                // Play a success sound? optional.
+
+                setTimeout(() => {
+                    questionContent.classList.add('hidden-content');
+                    quoteSection.classList.remove('hidden-content');
+                }, 800); // Wait for user to see green glow
             }
         } else {
             // Wrong Answer: Shake effect
+            input.classList.add('shake');
+            setTimeout(() => input.classList.remove('shake'), 500);
+
             if (errorMsg) {
                 errorMsg.classList.remove('hidden');
                 errorMsg.classList.add('shake');
