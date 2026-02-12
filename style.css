@@ -60,6 +60,56 @@ h1 {
   backdrop-filter: blur(5px);
 }
 
+/* Overlays */
+#login-overlay,
+#proposal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  /* Events pass through wrapper */
+  transition: opacity 1s ease-in-out, visibility 1s;
+}
+
+#login-overlay.hidden,
+#proposal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  display: none !important;
+  /* Force hide */
+}
+
+/* Glassmorphism Panel (Re-applied to ensure it catches events) */
+.glass-panel {
+  pointer-events: auto;
+  /* Re-enable events for content */
+  background: rgba(20, 20, 30, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3rem 4rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  text-align: center;
+  transform: translateY(0);
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  max-width: 400px;
+  width: 90%;
+  transform-style: preserve-3d;
+}
+
+.glass-panel:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
 #audio-control:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: scale(1.1);
