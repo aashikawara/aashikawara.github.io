@@ -370,7 +370,7 @@ function generateAndBuildGallery(scene, userMedia) {
         const fileExt = filename.split('.').pop().toLowerCase();
         if (['mp4', 'webm'].includes(fileExt)) {
             const video = document.createElement('video');
-            video.src = encodeURI(`./${filename}`);
+            video.src = encodeURI(`public/${filename}`);
             video.crossOrigin = "anonymous";
             video.loop = true;
             video.muted = true;
@@ -380,7 +380,7 @@ function generateAndBuildGallery(scene, userMedia) {
             videoTexture.magFilter = THREE.LinearFilter;
             mediaMat = new THREE.MeshBasicMaterial({ map: videoTexture });
         } else {
-            const texture = textureLoader.load(encodeURI(`./${filename}`));
+            const texture = textureLoader.load(encodeURI(`public/${filename}`));
             mediaMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.4 });
         }
 
