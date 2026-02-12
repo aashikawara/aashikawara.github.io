@@ -1,0 +1,520 @@
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #000;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+#scene-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+#login-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  /* Allow events to pass through wrapper */
+  transition: opacity 1s ease-in-out, visibility 1s;
+}
+
+#login-overlay.hidden,
+#proposal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#proposal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  /* Allow events to pass through wrapper */
+  transition: opacity 1s ease-in-out, visibility 1s;
+}
+
+/* Glassmorphism Panel */
+.glass-panel {
+  pointer-events: auto;
+  /* Re-enable events for form */
+  background: rgba(20, 20, 30, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3rem 4rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  text-align: center;
+  transform: translateY(0);
+  transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+  max-width: 400px;
+  width: 90%;
+  /* Ensure 3D transform style is preserved for child elements if needed */
+  transform-style: preserve-3d;
+}
+
+.glass-panel:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 2rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #aaa;
+  font-weight: 500;
+}
+
+input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  /* Ensure padding doesn't affect width */
+}
+
+input:focus {
+  border-color: #00C9FF;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 2px rgba(0, 201, 255, 0.2);
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 1rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
+  color: #000;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 201, 255, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  perspective: 1000px;
+  /* Needed for 3D effect context */
+}
+
+#yes-btn {
+  background: linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%);
+}
+
+#no-btn {
+  background: linear-gradient(90deg, #ff416c 0%, #ff4b2b 100%);
+  position: relative;
+  /* Necessary for movement */
+  transition: all 0.5s ease-out;
+  /* Smooth initial movement */
+}
+
+.fly-away {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  /* The transform will be set via JS, but we want the transition to handle it smoothly */
+  transition: transform 1.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 1s ease-out !important;
+}
+
+/* Question Slides */
+.question-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  transition: opacity 1s ease-in-out, visibility 1s;
+}
+
+.question-slide.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.question-text {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  font-weight: 600;
+}
+
+.button-group-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.choice-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 0;
+  /* Override default button margin */
+  font-weight: 500;
+}
+
+.choice-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #00C9FF;
+}
+
+/* Enhanced Question Styles */
+.question-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-height: 200px;
+  object-fit: cover;
+}
+
+.hidden-content {
+  display: none !important;
+}
+
+.quote-section {
+  animation: fadeIn 0.8s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.quote-text {
+  font-size: 1.4rem;
+  font-style: italic;
+  font-weight: 300;
+  color: #92FE9D;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+  text-shadow: 0 0 10px rgba(146, 254, 157, 0.3);
+}
+
+.continue-btn {
+  width: auto;
+  min-width: 200px;
+  background: linear-gradient(90deg, #92FE9D 0%, #00C9FF 100%);
+  color: #000;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(146, 254, 157, 0.4);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.shake {
+  animation: shake 0.5s;
+}
+
+/* --- Gallery UI --- */
+#gallery-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  /* Below overlays but above canvas if needed for interaction */
+  pointer-events: none;
+  /* Let scroll pass through to body */
+  transition: opacity 1s ease-in-out;
+}
+
+#gallery-ui.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+#instructions {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 14px;
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  z-index: 20;
+  transition: opacity 0.5s;
+  pointer-events: auto;
+}
+
+#instructions p {
+  margin: 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.mouse-icon {
+  width: 20px;
+  height: 35px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  margin: 10px auto 0;
+  position: relative;
+}
+
+.mouse-icon::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 8px;
+  background: white;
+  border-radius: 2px;
+  animation: scrollWheel 1.5s infinite;
+}
+
+@keyframes bounce {
+
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  40% {
+    transform: translateX(-50%) translateY(-10px);
+  }
+
+  60% {
+    transform: translateX(-50%) translateY(-5px);
+  }
+}
+
+@keyframes scrollWheel {
+  0% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-50%) translateY(15px);
+    opacity: 0;
+  }
+}
+
+/* HTML 3D Labels (positioned via JS) */
+.gallery-label {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+
+  /* --- New Questionnaire Inputs --- */
+  .input-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 300px;
+    margin: 20px auto;
+  }
+
+  .styled-input {
+    width: 100%;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    outline: none;
+  }
+
+  .styled-input:focus {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #00C9FF;
+    box-shadow: 0 0 10px rgba(0, 201, 255, 0.3);
+  }
+
+  /* Date input specific */
+  .styled-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
+
+  .submit-question-btn {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #00C9FF, #92FE9D);
+    border: none;
+    border-radius: 25px;
+    color: #000;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .submit-question-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 201, 255, 0.4);
+  }
+
+  .error-msg {
+    color: #ff4757;
+    font-size: 0.9rem;
+    margin-top: -10px;
+    font-weight: 500;
+    animation: shake 0.5s;
+  }
+
+  margin-bottom: 4px;
+}
+
+.label-location {
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 400;
+}

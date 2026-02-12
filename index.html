@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Immersive WR</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+  <script>
+    window.onerror = function (message, source, lineno, colno, error) {
+      if (message.includes("SecurityError") || message.includes("Pointer Lock")) {
+        console.warn("Suppressing Pointer Lock Error: " + message);
+        return;
+      }
+      alert("Global Error: " + message + "\nLine: " + lineno);
+      console.error(error);
+    };
+  </script>
+  <div id="app">
+    <div id="login-overlay">
+      <div class="glass-panel">
+        <h1>Are you the one?</h1>
+        <p class="subtitle">Enter the realm</p>
+
+        <form id="login-form">
+          <div class="input-group">
+            <label for="user-name">What I call you?</label>
+            <input type="text" id="user-name" required autocomplete="off" placeholder="Your designation..." />
+          </div>
+
+          <div class="input-group">
+            <label for="system-name">What do you call me?</label>
+            <input type="text" id="system-name" required autocomplete="off" placeholder="My designation..." />
+          </div>
+
+          <button type="submit" id="auth-btn">Authenticate</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Question Slides -->
+    <!-- Q1 -->
+    <div id="question-overlay-1" class="hidden question-slide">
+      <div class="glass-panel">
+        <div class="question-content">
+          <h2>Question 1/4</h2>
+          <img src="./scouts.png" alt="Scout and Guide" class="question-image" />
+          <p class="question-text">what did you catch me staring at in scout and guide trip</p>
+          <div class="input-group-vertical">
+            <input type="text" id="q1-input" class="styled-input" placeholder="Type your answer..." autocomplete="off">
+            <button class="submit-question-btn" data-input="q1-input" data-correct-val="legs">Submit</button>
+            <p class="error-msg hidden">Try again!</p>
+          </div>
+        </div>
+        <div class="quote-section hidden-content">
+          <p class="quote-text">"jab pyaar kiya toh darna Kya, pyaar kiya koi chori nhi ki"</p>
+          <button class="continue-btn" data-next="question-overlay-2">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q2 -->
+    <div id="question-overlay-2" class="hidden question-slide">
+      <div class="glass-panel">
+        <div class="question-content">
+          <h2>Question 2/4</h2>
+          <img src="./date.png" alt="First Date" class="question-image" />
+          <p class="question-text">when did we go on our first official date?</p>
+          <div class="input-group-vertical">
+            <input type="date" id="q2-input" class="styled-input">
+            <button class="submit-question-btn" data-input="q2-input" data-correct-val="2024-12-30">Submit</button>
+            <p class="error-msg hidden">Try again!</p>
+          </div>
+        </div>
+        <div class="quote-section hidden-content">
+          <p class="quote-text">"imteha hogayi intezar ki aayi na koi khabar mere yaar ki"</p>
+          <button class="continue-btn" data-next="question-overlay-3">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q3 -->
+    <div id="question-overlay-3" class="hidden question-slide">
+      <div class="glass-panel">
+        <div class="question-content">
+          <h2>Question 3/4</h2>
+          <img src="./class.png" alt="First I Love You" class="question-image" />
+          <p class="question-text">when did we say I love you for the very first time</p>
+          <div class="input-group-vertical">
+            <input type="date" id="q3-input" class="styled-input">
+            <button class="submit-question-btn" data-input="q3-input" data-correct-val="2015-10-04">Submit</button>
+            <p class="error-msg hidden">Try again!</p>
+          </div>
+        </div>
+        <div class="quote-section hidden-content">
+          <p class="quote-text">"tezz horahetoh kaisa laga Hey se I love you tak ka safar"</p>
+          <button class="continue-btn" data-next="question-overlay-4">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Q4 -->
+    <div id="question-overlay-4" class="hidden question-slide">
+      <div class="glass-panel">
+        <div class="question-content">
+          <h2>Question 4/4</h2>
+          <img src="./Propose.png" alt="Who do I Love" class="question-image" />
+          <p class="question-text">who do I love the most?</p>
+          <div class="input-group-vertical">
+            <input type="text" id="q4-input" class="styled-input" placeholder="Type your answer..." autocomplete="off">
+            <button class="submit-question-btn" data-input="q4-input" data-correct-val="angela|shona|me">Submit</button>
+            <p class="error-msg hidden">That's not it...</p>
+          </div>
+        </div>
+        <div class="quote-section hidden-content">
+          <p class="quote-text">"bade tezz horahe ho hmmm"</p>
+          <button class="continue-btn" data-next="proposal-overlay">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="proposal-overlay" class="hidden">
+      <div class="glass-panel">
+        <h1>One Final Question...</h1>
+        <img src="./old.png" alt="Grow Old With Me" class="question-image" />
+        <p class="quote-text" style="font-style: italic; margin-bottom: 20px;">"Grow old with me?"</p>
+        <p class="subtitle" id="proposal-text">Will you be my valentine?</p>
+
+        <div class="button-group">
+          <button id="yes-btn">YES</button>
+          <button id="no-btn">NO</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gallery UI (Scroll Helper & labels) -->
+    <div id="gallery-ui" class="hidden">
+      <!-- Old scroll indicator removed/hidden -->
+
+      <div id="instructions">
+        <p style="font-size:36px">Click to Explore</p>
+        <p>Move: W, A, S, D<br />Look: Mouse</p>
+      </div>
+
+      <div id="gallery-labels"></div>
+    </div>
+
+    <div id="scene-container"></div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
