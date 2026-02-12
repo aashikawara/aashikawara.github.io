@@ -17,6 +17,25 @@ const proposalOverlay = document.getElementById('proposal-overlay');
 const proposalText = document.getElementById('proposal-text');
 const noBtn = document.getElementById('no-btn');
 const yesBtn = document.getElementById('yes-btn');
+const audioControl = document.getElementById('audio-control');
+const bgMusic = document.getElementById('bg-music');
+const audioIcon = document.getElementById('audio-icon');
+
+// --- Audio Logic ---
+let isPlaying = false;
+audioControl.addEventListener('click', () => {
+    if (isPlaying) {
+        bgMusic.pause();
+        // Mute icon
+        audioIcon.innerHTML = '<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>';
+    } else {
+        bgMusic.play().then(() => {
+            // Play icon
+            audioIcon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+        }).catch(e => console.log("Audio play failed:", e));
+    }
+    isPlaying = !isPlaying;
+});
 
 // --- Three.js Setup ---
 const scene = new THREE.Scene();
@@ -34,23 +53,35 @@ sceneContainer.appendChild(renderer.domElement);
 // --- Content ---
 
 // 1. Particle System (The "World")
+// 1. Particle System (The "World") - Upgraded to Hearts
 const particlesGeometry = new THREE.BufferGeometry();
-const particlesCount = 2000;
+const particlesCount = 1500; // Slightly fewer for performance with clearer movement
 const posArray = new Float32Array(particlesCount * 3);
+const velocityArray = new Float32Array(particlesCount * 3); // For movement
 
-for (let i = 0; i < particlesCount * 3; i++) {
+for (let i = 0; i < particlesCount * 3; i += 3) {
     // Spread particles in a large volume
-    posArray[i] = (Math.random() - 0.5) * 50;
+    posArray[i] = (Math.random() - 0.5) * 60;
+    posArray[i + 1] = (Math.random() - 0.5) * 60;
+    posArray[i + 2] = (Math.random() - 0.5) * 60;
+
+    // Slight upward drift
+    velocityArray[i] = (Math.random() - 0.5) * 0.02;
+    velocityArray[i + 1] = Math.random() * 0.05 + 0.01; // Up
+    velocityArray[i + 2] = (Math.random() - 0.5) * 0.02;
 }
 
 particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
+// Create a heart shape texture programmatically would be cool, but points are squares.
+// We'll use color and movement to suggest "magic".
 const material = new THREE.PointsMaterial({
-    size: 0.05,
-    color: 0x00C9FF,
+    size: 0.15,
+    color: 0xff9a9e, // Pinkish
     transparent: true,
     opacity: 0.8,
-    blending: THREE.AdditiveBlending
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true
 });
 
 const particlesMesh = new THREE.Points(particlesGeometry, material);
@@ -204,7 +235,16 @@ noBtn.addEventListener('mouseover', () => {
 });
 
 // "Yes" Button Logic
+// "Yes" Button Logic
 yesBtn.addEventListener('click', () => {
+    // Play music if not already playing
+    if (!isPlaying) {
+        bgMusic.play().then(() => {
+            isPlaying = true;
+            audioIcon.innerHTML = '<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
+        }).catch(e => console.log("Audio play failed on Yes:", e));
+    }
+
     proposalOverlay.classList.add('hidden');
 
     // Celebrate!
@@ -213,10 +253,13 @@ yesBtn.addEventListener('click', () => {
 
     console.log("She said YES!");
 
+    // Trigger Explosion
+    explodeConfetti();
+
     // Start Gallery transition after a delay
     setTimeout(() => {
         initGallery();
-    }, 2000);
+    }, 3000); // 3 seconds to enjoy confetti
 });
 
 // Mouse movement
@@ -688,22 +731,90 @@ function generateAndBuildGallery(scene, userMedia) {
             }
         } else {
             // Last Chunk? Cap the end.
-            // End wall at current Position + epsilon?
-            // Current pos is end of corridor.
-            // Just add a wall.
-
-            if (currentDirIdx === 0) // Facing North, Wall at North
-                buildBox(currentX, wallHeight / 2, currentZ, 20, wallHeight, 1, wallMat);
-            else if (currentDirIdx === 1) // East
-                buildBox(currentX, wallHeight / 2, currentZ, 1, wallHeight, 20, wallMat);
-            else if (currentDirIdx === 2) // South
-                buildBox(currentX, wallHeight / 2, currentZ, 20, wallHeight, 1, wallMat);
-            else // West
-                buildBox(currentX, wallHeight / 2, currentZ, 1, wallHeight, 20, wallMat);
+            if (currentDirIdx === 0) buildBox(currentX, wallHeight / 2, currentZ, 20, wallHeight, 1, wallMat);
+            else if (currentDirIdx === 1) buildBox(currentX, wallHeight / 2, currentZ, 1, wallHeight, 20, wallMat);
+            else if (currentDirIdx === 2) buildBox(currentX, wallHeight / 2, currentZ, 20, wallHeight, 1, wallMat);
+            else buildBox(currentX, wallHeight / 2, currentZ, 1, wallHeight, 20, wallMat);
         }
     }
 
-    // Cap the Start (We rely on Lobby now, which caps its back. The start of procedure is open to lobby).
+    // Init Floating Hearts for Gallery
+    initFloatingHearts(scene, currentX, currentZ); // Spread them around the generated path? 
+    // Actually better to just scatter them in a volume around the player or fixed points.
+    // Let's scatter them along the generated path segments.
+}
+
+// --- Visual Effects Systems ---
+
+// 1. Floating Hearts in Gallery
+let floatingHearts = [];
+function initFloatingHearts(scene) {
+    // Create heart shape
+    const x = 0, y = 0;
+    const heartShape = new THREE.Shape();
+    heartShape.moveTo(x + 0.5, y + 0.5);
+    heartShape.bezierCurveTo(x + 0.5, y + 0.5, x + 0.4, y, x, y);
+    heartShape.bezierCurveTo(x - 0.6, y, x - 0.6, y + 0.7, x - 0.6, y + 0.7);
+    heartShape.bezierCurveTo(x - 0.6, y + 1.1, x - 0.3, y + 1.54, x + 0.5, y + 1.9);
+    heartShape.bezierCurveTo(x + 1.2, y + 1.54, x + 1.6, y + 1.1, x + 1.6, y + 0.7);
+    heartShape.bezierCurveTo(x + 1.6, y + 0.7, x + 1.6, y, x + 1.0, y);
+    heartShape.bezierCurveTo(x + 0.7, y, x + 0.5, y + 0.5, x + 0.5, y + 0.5);
+
+    const geometry = new THREE.ExtrudeGeometry(heartShape, { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 });
+    const material = new THREE.MeshStandardMaterial({ color: 0xff69b4, emissive: 0xff1493, emissiveIntensity: 0.5, metalness: 0.5, roughness: 0.2 });
+
+    // Create 50 hearts scattered
+    for (let i = 0; i < 50; i++) {
+        const mesh = new THREE.Mesh(geometry, material);
+        // Random pos - we need them near the corridors.
+        // It's hard to follow the procedurally generated path exactly without storing it.
+        // Let's just put them in the Lobby and first few segments or use a large volume.
+        // Or better, let's just make them surround the player? No, static is better.
+        // We'll scatter them in a loop around 0,0 for now, effectively in the lobby/start.
+        // Ideally we'd add them IN generateAndBuildGallery per segment.
+
+        mesh.position.set(
+            (Math.random() - 0.5) * 100,
+            Math.random() * 8 + 2, // Ceiling height
+            (Math.random() - 0.5) * 100
+        );
+
+        mesh.rotation.z = Math.PI; // Point up
+        mesh.rotation.y = Math.random() * Math.PI * 2;
+        mesh.scale.set(0.5, 0.5, 0.5);
+
+        scene.add(mesh);
+        floatingHearts.push({
+            mesh: mesh,
+            speed: Math.random() * 0.02 + 0.01,
+            yOffset: Math.random() * Math.PI
+        });
+    }
+}
+
+// 2. Confetti Explosion
+let confettiParticles = [];
+function explodeConfetti() {
+    const geo = new THREE.PlaneGeometry(0.1, 0.1);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+
+    for (let i = 0; i < 500; i++) {
+        const material = mat.clone();
+        material.color.setHSL(Math.random(), 1, 0.5);
+
+        const mesh = new THREE.Mesh(geo, material);
+        mesh.position.set(0, 0, 0); // Start at center (before gallery load)
+
+        // Random velocity
+        const velocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.5,
+            (Math.random() - 0.5) * 0.5,
+            (Math.random() - 0.5) * 0.2 + 0.5 // Forward/Up
+        );
+
+        scene.add(mesh);
+        confettiParticles.push({ mesh, velocity });
+    }
 }
 
 // --- Init Gallery Room ---
@@ -914,7 +1025,7 @@ function animate() {
 
 
     // Auth Mode Animations
-    if (!state.authenticated) {
+    if (!state.authenticated && !isGalleryActive) {
         const elapsedTime = clock.getElapsedTime();
         const scale = 1 + Math.sin(elapsedTime * 2) * 0.1;
         coreMesh.scale.set(scale, scale, scale);
@@ -930,6 +1041,29 @@ function animate() {
         camera.position.x += (mouseX * 0.005 - camera.position.x) * 0.05;
         camera.position.y += (-mouseY * 0.005 - camera.position.y) * 0.05;
         camera.lookAt(scene.position);
+    }
+
+    // Animate Confetti
+    confettiParticles.forEach((p, i) => {
+        p.mesh.position.add(p.velocity);
+        p.velocity.y -= 0.01; // Gravity
+        p.mesh.rotation.x += 0.1;
+        p.mesh.rotation.y += 0.1;
+
+        // Remove if too low
+        if (p.mesh.position.y < -20) {
+            scene.remove(p.mesh);
+            confettiParticles.splice(i, 1);
+        }
+    });
+
+    // Animate Floating Hearts (Gallery)
+    if (isGalleryActive) {
+        const time = clock.getElapsedTime();
+        floatingHearts.forEach(heart => {
+            heart.mesh.rotation.y += heart.speed;
+            heart.mesh.position.y += Math.sin(time + heart.yOffset) * 0.005;
+        });
     }
 
     // Common Updates (Particles)
