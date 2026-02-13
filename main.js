@@ -868,19 +868,19 @@ function generateAndBuildGallery(scene, userMedia) {
             if (currentDirIdx === 0) { // North (Decreasing Z)
                 wallW = 20; wallD = 1;
                 pz += 0.5; // Wall is at currentZ. We want text slightly South (Towards player)
-                ry = Math.PI; // Show the other face of the plane
+                ry = 0;    // Face South
             } else if (currentDirIdx === 1) { // East (Increasing X)
                 wallW = 1; wallD = 20;
                 px -= 0.5; // Wall at currentX. Text slightly West.
-                ry = Math.PI / 2; // Show the other face
+                ry = -Math.PI / 2; // Face West
             } else if (currentDirIdx === 2) { // South (Increasing Z)
                 wallW = 20; wallD = 1;
                 pz -= 0.5; // Wall at currentZ. Text slightly North.
-                ry = 0; // Show the other face
+                ry = Math.PI; // Face North
             } else { // 3 West (Decreasing X)
                 wallW = 1; wallD = 20;
                 px += 0.5; // Wall at currentX. Text slightly East.
-                ry = -Math.PI / 2; // Show the other face
+                ry = Math.PI / 2; // Face East
             }
 
             // Build Wall
@@ -906,8 +906,7 @@ function generateAndBuildGallery(scene, userMedia) {
             const tex = new THREE.CanvasTexture(canvas);
             const textMat = new THREE.MeshBasicMaterial({
                 map: tex,
-                transparent: true,
-                side: THREE.DoubleSide
+                transparent: true
             });
             const textGeo = new THREE.PlaneGeometry(16, 8);
             const textMesh = new THREE.Mesh(textGeo, textMat);
