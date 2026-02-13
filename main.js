@@ -856,11 +856,59 @@ function generateAndBuildGallery(scene, userMedia) {
                 currentZ = turnCenterZ;
             }
         } else {
-            // Last Chunk? Cap the end.
-            if (currentDirIdx === 0) buildBox(currentX, wallHeight / 2, currentZ, 20, wallHeight, 1, wallMat);
-            else if (currentDirIdx === 1) buildBox(currentX, wallHeight / 2, currentZ, 1, wallHeight, 20, wallMat);
-            else if (currentDirIdx === 2) buildBox(currentX, wallHeight / 2, currentZ, 20, wallHeight, 1, wallMat);
-            else buildBox(currentX, wallHeight / 2, currentZ, 1, wallHeight, 20, wallMat);
+            // Last Chunk? Cap the end with a message.
+            let wallW, wallD, px = currentX, pz = currentZ, ry = 0;
+
+            if (currentDirIdx === 0) {
+                wallW = 20; wallD = 1;
+                pz += 0.2; // Slight offset
+                ry = 0;
+            } else if (currentDirIdx === 1) {
+                wallW = 1; wallD = 20;
+                px -= 0.2;
+                ry = -Math.PI / 2;
+            } else if (currentDirIdx === 2) {
+                wallW = 20; wallD = 1;
+                pz -= 0.2;
+                ry = Math.PI;
+            } else {
+                wallW = 1; wallD = 20; // 3 West
+                px += 0.2;
+                ry = Math.PI / 2;
+            }
+
+            // Build Wall
+            buildBox(currentX, wallHeight / 2, currentZ, wallW, wallHeight, wallD, wallMat);
+
+            // Create Text Texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Background (Transparent)
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, 1024, 512);
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 80px "Dancing Script", cursive';
+            ctx.fillStyle = '#E91E63'; // Pink
+            ctx.fillText("To many such memories", 512, 200);
+            ctx.fillText("yet to come...", 512, 320);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const textMat = new THREE.MeshBasicMaterial({
+                map: tex,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const textGeo = new THREE.PlaneGeometry(16, 8);
+            const textMesh = new THREE.Mesh(textGeo, textMat);
+
+            textMesh.position.set(px, wallHeight / 2, pz);
+            textMesh.rotation.y = ry;
+            scene.add(textMesh);
         }
     }
 
@@ -868,51 +916,6 @@ function generateAndBuildGallery(scene, userMedia) {
 
 // --- Visual Effects Systems ---
 
-// 1. Floating Hearts in Gallery
-let floatingHearts = [];
-function initFloatingHearts(scene) {
-    // Create heart shape
-    const x = 0, y = 0;
-    const heartShape = new THREE.Shape();
-    heartShape.moveTo(x + 0.5, y + 0.5);
-    heartShape.bezierCurveTo(x + 0.5, y + 0.5, x + 0.4, y, x, y);
-    heartShape.bezierCurveTo(x - 0.6, y, x - 0.6, y + 0.7, x - 0.6, y + 0.7);
-    heartShape.bezierCurveTo(x - 0.6, y + 1.1, x - 0.3, y + 1.54, x + 0.5, y + 1.9);
-    heartShape.bezierCurveTo(x + 1.2, y + 1.54, x + 1.6, y + 1.1, x + 1.6, y + 0.7);
-    heartShape.bezierCurveTo(x + 1.6, y + 0.7, x + 1.6, y, x + 1.0, y);
-    heartShape.bezierCurveTo(x + 0.7, y, x + 0.5, y + 0.5, x + 0.5, y + 0.5);
-
-    const geometry = new THREE.ExtrudeGeometry(heartShape, { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 });
-    const material = new THREE.MeshStandardMaterial({ color: 0xff69b4, emissive: 0xff1493, emissiveIntensity: 0.5, metalness: 0.5, roughness: 0.2 });
-
-    // Create 50 hearts scattered
-    for (let i = 0; i < 50; i++) {
-        const mesh = new THREE.Mesh(geometry, material);
-        // Random pos - we need them near the corridors.
-        // It's hard to follow the procedurally generated path exactly without storing it.
-        // Let's just put them in the Lobby and first few segments or use a large volume.
-        // Or better, let's just make them surround the player? No, static is better.
-        // We'll scatter them in a loop around 0,0 for now, effectively in the lobby/start.
-        // Ideally we'd add them IN generateAndBuildGallery per segment.
-
-        mesh.position.set(
-            (Math.random() - 0.5) * 100,
-            Math.random() * 8 + 2, // Ceiling height
-            (Math.random() - 0.5) * 100
-        );
-
-        mesh.rotation.z = Math.PI; // Point up
-        mesh.rotation.y = Math.random() * Math.PI * 2;
-        mesh.scale.set(0.5, 0.5, 0.5);
-
-        scene.add(mesh);
-        floatingHearts.push({
-            mesh: mesh,
-            speed: Math.random() * 0.02 + 0.01,
-            yOffset: Math.random() * Math.PI
-        });
-    }
-}
 
 // 2. Confetti Explosion
 let confettiParticles = [];
