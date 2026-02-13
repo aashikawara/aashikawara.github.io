@@ -863,22 +863,23 @@ function generateAndBuildGallery(scene, userMedia) {
             // Last Chunk? Cap the end with a message.
             let wallW, wallD, px = currentX, pz = currentZ, ry = 0;
 
-            if (currentDirIdx === 0) {
+            if (currentDirIdx === 0) { // North (Decreasing Z)
                 wallW = 20; wallD = 1;
-                pz += 0.2; // Slight offset
-                ry = 0;
-            } else if (currentDirIdx === 1) {
-                wallW = 1; wallD = 20;
-                px -= 0.2;
-                ry = -Math.PI / 2;
-            } else if (currentDirIdx === 2) {
-                wallW = 20; wallD = 1;
-                pz -= 0.2;
+                pz += 0.5; // Wall is at currentZ. We want text slightly South (Towards player)
+                ry = 0; // Text faces North (default)? No, needs to face South.
                 ry = Math.PI;
-            } else {
-                wallW = 1; wallD = 20; // 3 West
-                px += 0.2;
-                ry = Math.PI / 2;
+            } else if (currentDirIdx === 1) { // East (Increasing X)
+                wallW = 1; wallD = 20;
+                px -= 0.5; // Wall at currentX. Text slightly West.
+                ry = -Math.PI / 2; // Face West
+            } else if (currentDirIdx === 2) { // South (Increasing Z)
+                wallW = 20; wallD = 1;
+                pz -= 0.5; // Wall at currentZ. Text slightly North.
+                ry = 0; // Face South? No, Face North.
+            } else { // 3 West (Decreasing X)
+                wallW = 1; wallD = 20;
+                px += 0.5; // Wall at currentX. Text slightly East.
+                ry = Math.PI / 2; // Face East
             }
 
             // Build Wall
