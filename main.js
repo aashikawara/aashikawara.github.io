@@ -318,6 +318,9 @@ let moveForward = false;
 let moveBackward = false;
 let moveLeft = false;
 let moveRight = false;
+
+// Global array for floating hearts animation
+let floatingHearts = [];
 let canJump = false;
 
 const velocity = new THREE.Vector3();
@@ -452,6 +455,7 @@ function createNPC(bounds, scene) {
 }
 
 function generateAndBuildGallery(scene, userMedia) {
+    floatingHearts = []; // Reset array
     segments = []; // Reset
     const corridorWidth = 20;
     const corridorLength = 40; // Fits 4 images (2 per side)
