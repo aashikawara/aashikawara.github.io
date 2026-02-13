@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 
 // --- State ---
 const state = {
@@ -290,7 +291,7 @@ document.addEventListener('mousemove', (event) => {
     mouseY = (event.clientY - windowHalfY);
 });
 
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
+
 
 // --- Gallery "Walking" State ---
 let controls;
@@ -1111,12 +1112,12 @@ function animate() {
         const deltaZ = -velocity.z * delta;
 
         // Store previous position for collision rollback
-        const oldPos = controls.getObject().position.clone();
+        const oldPos = controls.object.position.clone();
 
         controls.moveRight(deltaX);
         controls.moveForward(deltaZ);
 
-        const newPos = controls.getObject().position;
+        const newPos = controls.object.position;
 
         // Force ground level (simple gravity floor)
         if (newPos.y < 2) {
@@ -1130,19 +1131,19 @@ function animate() {
             // Attempt to undo X and Z independently to slide along walls.
 
             // Revert BOTH first
-            controls.getObject().position.copy(oldPos);
+            controls.object.position.copy(oldPos);
 
             // Try moving ONLY X
             controls.moveRight(deltaX);
-            if (!checkCollision(controls.getObject().position)) {
+            if (!checkCollision(controls.object.position)) {
                 // X invalid. Revert X.
-                controls.getObject().position.copy(oldPos);
+                controls.object.position.copy(oldPos);
 
                 // Try moving ONLY Z
                 controls.moveForward(deltaZ);
-                if (!checkCollision(controls.getObject().position)) {
+                if (!checkCollision(controls.object.position)) {
                     // Z also invalid. Revert Z. Stuck/Corner.
-                    controls.getObject().position.copy(oldPos);
+                    controls.object.position.copy(oldPos);
                     velocity.x = 0;
                     velocity.z = 0;
                 } else {
