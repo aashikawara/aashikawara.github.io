@@ -868,19 +868,19 @@ function generateAndBuildGallery(scene, userMedia) {
             if (currentDirIdx === 0) { // North (Decreasing Z)
                 wallW = 20; wallD = 1;
                 pz += 0.5; // Wall is at currentZ. We want text slightly South (Towards player)
-                ry = 0;    // Standard Plane faces +Z (South). This is what we want!
+                ry = Math.PI; // Show the other face of the plane
             } else if (currentDirIdx === 1) { // East (Increasing X)
                 wallW = 1; wallD = 20;
                 px -= 0.5; // Wall at currentX. Text slightly West.
-                ry = -Math.PI / 2; // Face West
+                ry = Math.PI / 2; // Show the other face
             } else if (currentDirIdx === 2) { // South (Increasing Z)
                 wallW = 20; wallD = 1;
                 pz -= 0.5; // Wall at currentZ. Text slightly North.
-                ry = Math.PI; // Face North
+                ry = 0; // Show the other face
             } else { // 3 West (Decreasing X)
                 wallW = 1; wallD = 20;
                 px += 0.5; // Wall at currentX. Text slightly East.
-                ry = Math.PI / 2; // Face East
+                ry = -Math.PI / 2; // Show the other face
             }
 
             // Build Wall
@@ -914,7 +914,6 @@ function generateAndBuildGallery(scene, userMedia) {
 
             textMesh.position.set(px, wallHeight / 2, pz);
             textMesh.rotation.y = ry;
-            textMesh.scale.x = -1; // Force flip to fix mirror image
             scene.add(textMesh);
         }
     }
