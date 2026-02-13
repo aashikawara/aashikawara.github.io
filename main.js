@@ -298,10 +298,12 @@ yesBtn.addEventListener('click', () => {
     }, 500);
 
     // Start Gallery transition after Intro
-    setTimeout(() => {
-        document.getElementById('love-overlay').classList.add('hidden');
-        initGallery();
-    }, 4000); // 4 seconds of love
+    if (!isGalleryActive) {
+        setTimeout(() => {
+            document.getElementById('love-overlay').classList.add('hidden');
+            initGallery();
+        }, 4000); // 4 seconds of love
+    }
 });
 
 // Mouse movement
@@ -949,6 +951,10 @@ function explodeConfetti() {
 
 // --- Init Gallery Room ---
 function initGalleryRoom() {
+    if (isGalleryActive) {
+        console.warn("initGalleryRoom: already active");
+        return;
+    }
     try {
         console.log("Starting initGalleryRoom (Procedural)...");
 
@@ -984,7 +990,12 @@ function initGalleryRoom() {
         }
         controls = new PointerLockControls(camera, document.body);
 
+        let lastLockTime = 0;
         const lockControls = () => {
+            const now = Date.now();
+            if (now - lastLockTime < 1000) return; // Debounce 1s
+            lastLockTime = now;
+
             if (controls && !controls.isLocked) {
                 try {
                     controls.lock();
@@ -1264,8 +1275,7 @@ function animate() {
 
         renderer.render(scene, camera);
     }
-
-    // Start animation at the END
-    animate();
-
 }
+
+// Start animation loop
+animate();
