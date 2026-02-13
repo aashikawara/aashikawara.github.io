@@ -977,13 +977,26 @@ function initGalleryRoom() {
         const instructions = document.getElementById('instructions');
 
         // Setup Controls
-        if (!controls) controls = new PointerLockControls(camera, document.body);
+        // Setup Controls
+        if (controls) {
+            controls.dispose();
+            controls = null;
+        }
+        controls = new PointerLockControls(camera, document.body);
+
+        const lockControls = () => {
+            if (controls && !controls.isLocked) {
+                try {
+                    controls.lock();
+                } catch (err) {
+                    console.warn("PointerLock rejected:", err);
+                }
+            }
+        };
 
         instructions.addEventListener('click', (e) => {
-            if (!controls.isLocked) {
-                controls.lock();
-            }
-            e.stopPropagation(); // Prevent bubbling to gallery-ui
+            lockControls();
+            e.stopPropagation();
         });
 
         controls.addEventListener('lock', () => {
@@ -991,15 +1004,15 @@ function initGalleryRoom() {
             galleryUI.style.display = 'block';
         });
 
-        galleryUI.addEventListener('click', (e) => {
-            // Only lock if clicking on the background (not instructions, but we stopped prop anyway)
-            if (!controls.isLocked && isGalleryActive) {
-                controls.lock();
-            }
-        });
-
         controls.addEventListener('unlock', () => {
             instructions.style.display = 'flex';
+            // Optional: pause game loop logic here if desired
+        });
+
+        galleryUI.addEventListener('click', (e) => {
+            if (isGalleryActive && !controls.isLocked) {
+                lockControls();
+            }
         });
 
         // Movement Listeners
