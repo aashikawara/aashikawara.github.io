@@ -271,10 +271,17 @@ yesBtn.addEventListener('click', () => {
     // Trigger Explosion
     explodeConfetti();
 
-    // Start Gallery transition after a delay
+    // Show "I Love You" Overlay
     setTimeout(() => {
+        proposalOverlay.classList.add('hidden');
+        document.getElementById('love-overlay').classList.remove('hidden');
+    }, 500);
+
+    // Start Gallery transition after Intro
+    setTimeout(() => {
+        document.getElementById('love-overlay').classList.add('hidden');
         initGallery();
-    }, 3000); // 3 seconds to enjoy confetti
+    }, 4000); // 4 seconds of love
 });
 
 // Mouse movement
@@ -1003,37 +1010,73 @@ function animate() {
         // But we didn't store prev pos before move.
         // Let's check collision. If invalid, push back.
 
-        if (!checkCollision(playerPos)) {
+        const delta = clock.getDelta();
+
+        // Friction and Gravity
+        velocity.x -= velocity.x * 10.0 * delta;
+        velocity.z -= velocity.z * 10.0 * delta;
+        velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+        direction.z = Number(moveForward) - Number(moveBackward);
+        direction.x = Number(moveRight) - Number(moveLeft);
+        direction.normalize(); // Ensure consistent speed in all directions
+
+        if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
+        if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
+
+        // Apply Movement via PointerLockControls
+        // This handles camera direction automatically.
+        // We calculate the proposed delta for this frame.
+        const deltaX = -velocity.x * delta;
+        const deltaZ = -velocity.z * delta;
+
+        // Store previous position for collision rollback
+        const oldPos = controls.getObject().position.clone();
+
+        controls.moveRight(deltaX);
+        controls.moveForward(deltaZ);
+
+        const newPos = controls.getObject().position;
+
+        // Force ground level (simple gravity floor)
+        if (newPos.y < 2) {
+            velocity.y = 0;
+            newPos.y = 2; // Eye level
+        }
+
+        // Collision Check
+        if (!checkCollision(newPos)) {
             // Collision detected!
-            // Attempt to undo X and Z independently to allow "sliding" along walls.
+            // Attempt to undo X and Z independently to slide along walls.
 
-            const undoX = velocity.x * delta;
-            const undoZ = velocity.z * delta;
+            // Revert BOTH first
+            controls.getObject().position.copy(oldPos);
 
-            // Try undoing just X (Lateral movement)
-            controls.moveRight(undoX); // Undo X
-            if (checkCollision(playerPos)) {
-                // X undo fixed it. We hit a wall in X direction.
-                velocity.x = 0;
-            } else {
-                // X undo didn't fix it. Re-apply X (move back to invalid X state) 
-                // and try undoing Z.
-                controls.moveRight(-undoX);
+            // Try moving ONLY X
+            controls.moveRight(deltaX);
+            if (!checkCollision(controls.getObject().position)) {
+                // X invalid. Revert X.
+                controls.getObject().position.copy(oldPos);
 
-                controls.moveForward(undoZ); // Undo Z
-                if (checkCollision(playerPos)) {
-                    // Z undo fixed it.
-                    velocity.z = 0;
-                } else {
-                    // Neither fixed it (corner?). Undo BOTH.
-                    controls.moveForward(-undoZ); // Re-apply Z to try both
-
-                    // Undo Both
-                    controls.moveRight(undoX);
-                    controls.moveForward(undoZ);
+                // Try moving ONLY Z
+                controls.moveForward(deltaZ);
+                if (!checkCollision(controls.getObject().position)) {
+                    // Z also invalid. Revert Z. Stuck/Corner.
+                    controls.getObject().position.copy(oldPos);
                     velocity.x = 0;
                     velocity.z = 0;
+                } else {
+                    // Z valid. Slide along Z.
+                    velocity.x = 0;
                 }
+            } else {
+                // X valid. 
+                // Try adding Z? 
+                // No, we want to slide. If we can move X, check if we can ALSO move Z? 
+                // If we could move both, we wouldn't have failed the first check.
+                // So implies simultaneous X+Z failed.
+                // If X is valid, we just keep X and drop Z velocity.
+                velocity.z = 0;
             }
         }
     }

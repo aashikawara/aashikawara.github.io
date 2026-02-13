@@ -569,3 +569,67 @@ button:active {
   font-size: 1.1rem;
   font-weight: 400;
 }
+
+/* Intro Love Overlay */
+#love-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
+  /* Highest */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: black;
+  transition: opacity 1s ease-in-out;
+  pointer-events: none;
+}
+
+#love-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  display: none !important;
+}
+
+.love-content {
+  text-align: center;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.love-title {
+  font-family: 'Dancing Script', cursive;
+  font-size: 5rem;
+  color: #ff1493;
+  text-shadow: 0 0 30px rgba(255, 20, 147, 0.8);
+  animation: heartbeat 1.5s infinite;
+}
+
+.floating-heart-icon {
+  position: absolute;
+  font-size: 3rem;
+  animation: floatUp 3s infinite linear;
+  opacity: 0;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-100px) scale(1.5);
+    opacity: 0;
+  }
+}
