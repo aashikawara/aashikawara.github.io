@@ -1120,124 +1120,132 @@ function animate() {
 
         // Removed redeclaration of delta here since it's already declared at top of animate loop
 
-        // Friction and Gravity
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
-        velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+        if (controls.isLocked) {
+            // TIME STEP FIX: Cap delta to prevent huge jumps or friction lock at low FPS
+            // If FPS drops to 10 (delta 0.1), friction multiplier 10.0*0.1 = 1.0 -> velocity becomes 0.
+            // We use a max delta for physics calculation.
+            const physicsDelta = Math.min(delta, 0.05);
 
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveRight) - Number(moveLeft);
-        direction.normalize(); // Ensure consistent speed in all directions
+            // Friction (Exponential Decay for frame-rate independence)
+            // v = v0 * e^(-k*t)
+            // k = 10.0
+            const damping = Math.exp(-10.0 * physicsDelta);
+            velocity.x *= damping;
+            velocity.z *= damping;
 
-        if (moveForward || moveBackward) velocity.z -= direction.z * 400.0 * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * 400.0 * delta;
+            // Gravity
+            velocity.y -= 9.8 * 100.0 * physicsDelta;
 
-        // Apply Movement via PointerLockControls
-        // This handles camera direction automatically.
-        // We calculate the proposed delta for this frame.
-        const deltaX = -velocity.x * delta;
-        const deltaZ = -velocity.z * delta;
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
 
-        // Store previous position for collision rollback
-        const oldPos = controls.object.position.clone();
+            // Acceleration
+            // If moving, we add velocity.
+            const speed = 600.0; // Increased base speed slightly to compensate for aggressive damping
+            if (moveForward || moveBackward) velocity.z -= direction.z * speed * physicsDelta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * speed * physicsDelta;
 
-        controls.moveRight(deltaX);
-        controls.moveForward(deltaZ);
+            // Apply Movement
+            const deltaX = -velocity.x * physicsDelta;
+            const deltaZ = -velocity.z * physicsDelta;
 
-        const newPos = controls.object.position;
+            // Store previous position for collision rollback
+            const oldPos = controls.object.position.clone();
 
-        // Force ground level (simple gravity floor)
-        if (newPos.y < 2) {
-            velocity.y = 0;
-            newPos.y = 2; // Eye level
-        }
-
-        // Collision Check
-        if (!checkCollision(newPos)) {
-            // Collision detected!
-            // Attempt to undo X and Z independently to slide along walls.
-
-            // Revert BOTH first
-            controls.object.position.copy(oldPos);
-
-            // Try moving ONLY X
             controls.moveRight(deltaX);
-            if (!checkCollision(controls.object.position)) {
-                // X invalid. Revert X.
+            controls.moveForward(deltaZ);
+
+            const newPos = controls.object.position;
+
+            // Force ground level (simple gravity floor)
+            if (newPos.y < 2) {
+                velocity.y = 0;
+                newPos.y = 2; // Eye level
+            }
+
+            // Collision Check
+            if (!checkCollision(newPos)) {
+                // Collision detected!
+                // Attempt to undo X and Z independently to slide along walls.
+
+                // Revert BOTH first
                 controls.object.position.copy(oldPos);
 
-                // Try moving ONLY Z
-                controls.moveForward(deltaZ);
+                // Try moving ONLY X
+                controls.moveRight(deltaX);
                 if (!checkCollision(controls.object.position)) {
-                    // Z also invalid. Revert Z. Stuck/Corner.
+                    // X invalid. Revert X.
                     controls.object.position.copy(oldPos);
-                    velocity.x = 0;
-                    velocity.z = 0;
+
+                    // Try moving ONLY Z
+                    controls.moveForward(deltaZ);
+                    if (!checkCollision(controls.object.position)) {
+                        // Z also invalid. Revert Z. Stuck/Corner.
+                        controls.object.position.copy(oldPos);
+                        velocity.x = 0;
+                        velocity.z = 0;
+                    } else {
+                        // Z valid. Slide along Z.
+                        velocity.x = 0;
+                    }
                 } else {
-                    // Z valid. Slide along Z.
-                    velocity.x = 0;
+                    // X valid. 
+                    velocity.z = 0;
                 }
-            } else {
-                // X valid. 
-                // Try adding Z? 
-                // No, we want to slide. If we can move X, check if we can ALSO move Z? 
-                // If we could move both, we wouldn't have failed the first check.
-                // So implies simultaneous X+Z failed.
-                // If X is valid, we just keep X and drop Z velocity.
-                velocity.z = 0;
             }
         }
-    }
 
 
-    // Auth Mode Animations
-    if (!state.authenticated && !isGalleryActive) {
-        const elapsedTime = clock.getElapsedTime();
-        const scale = 1 + Math.sin(elapsedTime * 2) * 0.1;
-        coreMesh.scale.set(scale, scale, scale);
-        coreMesh.rotation.z += 0.005;
-        coreMesh.rotation.y += 0.01;
 
-        targetX = mouseX * 0.001;
-        targetY = mouseY * 0.001;
+        // Auth Mode Animations
+        if (!state.authenticated && !isGalleryActive) {
+            const elapsedTime = clock.getElapsedTime();
+            const scale = 1 + Math.sin(elapsedTime * 2) * 0.1;
+            coreMesh.scale.set(scale, scale, scale);
+            coreMesh.rotation.z += 0.005;
+            coreMesh.rotation.y += 0.01;
 
-        scene.rotation.y += 0.05 * (targetX - scene.rotation.y);
-        scene.rotation.x += 0.05 * (targetY - scene.rotation.x);
+            targetX = mouseX * 0.001;
+            targetY = mouseY * 0.001;
 
-        camera.position.x += (mouseX * 0.005 - camera.position.x) * 0.05;
-        camera.position.y += (-mouseY * 0.005 - camera.position.y) * 0.05;
-        camera.lookAt(scene.position);
-    }
+            scene.rotation.y += 0.05 * (targetX - scene.rotation.y);
+            scene.rotation.x += 0.05 * (targetY - scene.rotation.x);
 
-    // Animate Confetti
-    confettiParticles.forEach((p, i) => {
-        p.mesh.position.add(p.velocity);
-        p.velocity.y -= 0.01; // Gravity
-        p.mesh.rotation.x += 0.1;
-        p.mesh.rotation.y += 0.1;
-
-        // Remove if too low
-        if (p.mesh.position.y < -20) {
-            scene.remove(p.mesh);
-            confettiParticles.splice(i, 1);
+            camera.position.x += (mouseX * 0.005 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 0.005 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
         }
-    });
 
-    // Animate Floating Hearts (Gallery)
-    if (isGalleryActive) {
-        const time = clock.getElapsedTime();
-        floatingHearts.forEach(heart => {
-            heart.mesh.rotation.y += heart.speed;
-            heart.mesh.position.y += Math.sin(time + heart.yOffset) * 0.005;
+        // Animate Confetti
+        confettiParticles.forEach((p, i) => {
+            p.mesh.position.add(p.velocity);
+            p.velocity.y -= 0.01; // Gravity
+            p.mesh.rotation.x += 0.1;
+            p.mesh.rotation.y += 0.1;
+
+            // Remove if too low
+            if (p.mesh.position.y < -20) {
+                scene.remove(p.mesh);
+                confettiParticles.splice(i, 1);
+            }
         });
+
+        // Animate Floating Hearts (Gallery)
+        if (isGalleryActive) {
+            const time = clock.getElapsedTime();
+            floatingHearts.forEach(heart => {
+                heart.mesh.rotation.y += heart.speed;
+                heart.mesh.position.y += Math.sin(time + heart.yOffset) * 0.005;
+            });
+        }
+
+        // Common Updates (Particles)
+        particlesMesh.rotation.y = clock.getElapsedTime() * 0.05;
+        particlesMesh.rotation.x = clock.getElapsedTime() * 0.02;
+
+        renderer.render(scene, camera);
     }
 
-    // Common Updates (Particles)
-    particlesMesh.rotation.y = clock.getElapsedTime() * 0.05;
-    particlesMesh.rotation.x = clock.getElapsedTime() * 0.02;
-
-    renderer.render(scene, camera);
-}
-
-// Start animation at the END
-animate();
+    // Start animation at the END
+    animate();
