@@ -866,8 +866,7 @@ function generateAndBuildGallery(scene, userMedia) {
             if (currentDirIdx === 0) { // North (Decreasing Z)
                 wallW = 20; wallD = 1;
                 pz += 0.5; // Wall is at currentZ. We want text slightly South (Towards player)
-                ry = 0; // Text faces North (default)? No, needs to face South.
-                ry = Math.PI;
+                ry = 0;    // Standard Plane faces +Z (South). This is what we want!
             } else if (currentDirIdx === 1) { // East (Increasing X)
                 wallW = 1; wallD = 20;
                 px -= 0.5; // Wall at currentX. Text slightly West.
@@ -875,7 +874,7 @@ function generateAndBuildGallery(scene, userMedia) {
             } else if (currentDirIdx === 2) { // South (Increasing Z)
                 wallW = 20; wallD = 1;
                 pz -= 0.5; // Wall at currentZ. Text slightly North.
-                ry = 0; // Face South? No, Face North.
+                ry = Math.PI; // Face North
             } else { // 3 West (Decreasing X)
                 wallW = 1; wallD = 20;
                 px += 0.5; // Wall at currentX. Text slightly East.
