@@ -1010,7 +1010,7 @@ function animate() {
         // But we didn't store prev pos before move.
         // Let's check collision. If invalid, push back.
 
-        const delta = clock.getDelta();
+        // Removed redeclaration of delta here since it's already declared at top of animate loop
 
         // Friction and Gravity
         velocity.x -= velocity.x * 10.0 * delta;
