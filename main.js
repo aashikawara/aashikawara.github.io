@@ -135,6 +135,25 @@ loginForm.addEventListener('submit', (e) => {
     const sName = systemNameInput.value.trim();
 
     if (uName && sName) {
+        // Check for Cheatcode (Akash / Akash) -> Bypass all
+        if (uName.toLowerCase() === 'akash' && sName.toLowerCase() === 'akash') {
+            state.userName = uName;
+            state.systemName = sName;
+            state.authenticated = true;
+
+            // Immediate Transition to Gallery
+            loginOverlay.classList.add('hidden');
+            console.log("Cheatcode activated! Skipping to Gallery.");
+
+            // Ensure music plays
+            if (!isPlaying && bgMusic) {
+                bgMusic.play().then(() => isPlaying = true).catch(e => console.log(e));
+            }
+
+            initGallery();
+            return;
+        }
+
         // Strict Validation: Shona & Chiku
         if (uName.toLowerCase() === 'shona' && sName.toLowerCase() === 'chiku') {
             state.userName = uName;
