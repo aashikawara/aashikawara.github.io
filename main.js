@@ -355,25 +355,24 @@ let isGalleryActive = false;
 let segments = []; // Stores the generated layout segments for collision detection
 
 // Helper to check collision with gallery bounds
+// Helper to check collision with gallery bounds
 function checkCollision(position) {
     // Iterate through all generated segments
     // If the player is inside ANY segment, they are safe.
     // If they are outside ALL segments, collision detected.
 
-    const margin = 1.5;
+    const margin = 1.0; // Player radius + wall buffer
+    const overlapBuffer = 2.0; // Extend open sides significantly to ensure seamless transition
 
     for (const seg of segments) {
-        // Apply margin ONLY if the side is NOT open
-        // Default: all sides closed (apply margin)
-        // If 'openSides' includes 'left', don't apply minX margin, etc.
-
-        // Define sides: 'minX', 'maxX', 'minZ', 'maxZ'
         const open = seg.openSides || [];
 
-        const minX = seg.bounds.minX + (open.includes('minX') ? -0.1 : margin);
-        const maxX = seg.bounds.maxX - (open.includes('maxX') ? -0.1 : margin);
-        const minZ = seg.bounds.minZ + (open.includes('minZ') ? -0.1 : margin);
-        const maxZ = seg.bounds.maxZ - (open.includes('maxZ') ? -0.1 : margin);
+        // If side is open (connected to another segment), extend bounds outwards
+        // If side is closed (wall), contract bounds inwards by margin
+        const minX = seg.bounds.minX + (open.includes('minX') ? -overlapBuffer : margin);
+        const maxX = seg.bounds.maxX - (open.includes('maxX') ? -overlapBuffer : margin);
+        const minZ = seg.bounds.minZ + (open.includes('minZ') ? -overlapBuffer : margin);
+        const maxZ = seg.bounds.maxZ - (open.includes('maxZ') ? -overlapBuffer : margin);
 
         if (position.x >= minX && position.x <= maxX &&
             position.z >= minZ && position.z <= maxZ) {
@@ -398,10 +397,39 @@ function createVisitor(x, z, scene) {
 
     // Random rotation
     visitor.rotation.y = Math.random() * Math.PI * 2;
+    visitor.rotation.y = Math.random() * Math.PI * 2;
     scene.add(visitor);
 }
 
 // --- Procedural Generation Logic ---
+
+function createBalloon(x, y, z, color, scene) {
+    const balloonGeo = new THREE.SphereGeometry(0.5, 32, 32);
+    const balloonMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.1 });
+    const balloon = new THREE.Mesh(balloonGeo, balloonMat);
+    balloon.position.set(x, y, z);
+
+    // String
+    const points = [];
+    points.push(new THREE.Vector3(x, y - 0.5, z));
+    points.push(new THREE.Vector3(x, y - 2, z + (Math.random() - 0.5) * 0.2));
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const line = new THREE.Line(lineGeo, lineMat);
+
+    scene.add(balloon);
+    scene.add(line);
+}
+
+function createNPC(bounds, scene) {
+    const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+    const z = bounds.minZ + Math.random() * (bounds.maxZ - bounds.minZ);
+    // Ensure NPC is slightly inside walls
+    if (x < bounds.minX + 2 || x > bounds.maxX - 2) return;
+    if (z < bounds.minZ + 2 || z > bounds.maxZ - 2) return;
+
+    createVisitor(x, z, scene);
+}
 
 function generateAndBuildGallery(scene, userMedia) {
     segments = []; // Reset
@@ -416,6 +444,29 @@ function generateAndBuildGallery(scene, userMedia) {
     const textureLoader = new THREE.TextureLoader();
     const photoGeo = new THREE.PlaneGeometry(4, 3);
     const frameGeo = new THREE.BoxGeometry(4.2, 3.2, 0.1);
+
+    // Heart Geometry Cache
+    const x = 0, y = 0;
+    const heartShape = new THREE.Shape();
+    heartShape.moveTo(x + 0.5, y + 0.5);
+    heartShape.bezierCurveTo(x + 0.5, y + 0.5, x + 0.4, y, x, y);
+    heartShape.bezierCurveTo(x - 0.6, y, x - 0.6, y + 0.7, x - 0.6, y + 0.7);
+    heartShape.bezierCurveTo(x - 0.6, y + 1.1, x - 0.3, y + 1.54, x + 0.5, y + 1.9);
+    heartShape.bezierCurveTo(x + 1.2, y + 1.54, x + 1.6, y + 1.1, x + 1.6, y + 0.7);
+    heartShape.bezierCurveTo(x + 1.6, y + 0.7, x + 1.6, y, x + 1.0, y);
+    heartShape.bezierCurveTo(x + 0.7, y, x + 0.5, y + 0.5, x + 0.5, y + 0.5);
+    const heartGeo = new THREE.ExtrudeGeometry(heartShape, { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 });
+    const heartMat = new THREE.MeshStandardMaterial({ color: 0xff69b4, emissive: 0xff1493, emissiveIntensity: 0.5 });
+
+    function placeFloatingHeart(x, y, z) {
+        const mesh = new THREE.Mesh(heartGeo, heartMat);
+        mesh.position.set(x, y, z);
+        mesh.rotation.z = Math.PI;
+        mesh.rotation.y = Math.random() * Math.PI * 2;
+        mesh.scale.set(0.3, 0.3, 0.3);
+        scene.add(mesh);
+        floatingHearts.push({ mesh: mesh, speed: 0.02, yOffset: Math.random() * Math.PI });
+    }
 
     // Helpers
     function buildBox(x, y, z, w, h, d, mat) {
@@ -627,11 +678,44 @@ function generateAndBuildGallery(scene, userMedia) {
             }
 
             placeArt(filename, artX, artY, artZ, artRot);
+
+            // Add Balloon randomly (Immersive World)
+            if (Math.random() > 0.4) {
+                const height = Math.random() < 0.5 ? 3 : 6;
+                let bx = artX;
+                let bz = artZ;
+
+                // Offset based on direction to place alongside art, not inside it
+                // Frame is ~4 wide. So +/- 3 units.
+                const offset = (Math.random() > 0.5 ? 3 : -3);
+
+                if (currentDirIdx === 0 || currentDirIdx === 2) { // N/S corridor
+                    bz += offset;
+                } else { // E/W corridor
+                    bx += offset;
+                }
+                const color = Math.random() > 0.5 ? 0xff69b4 : 0xffffff; // Pink or White
+                createBalloon(bx, height, bz, color, scene);
+            }
         });
 
-        // Add Visitors randomly
-        if (Math.random() > 0.5) {
-            createVisitor(centerX, centerZ, scene);
+
+        // Add Floating Hearts in Corridor
+        // Place one every ~10 units randomly
+        for (let k = 0; k < 3; k++) {
+            // Random point in corridor
+            const hx = (currentDirIdx % 2 === 0) ? (centerX + (Math.random() - 0.5) * 10) : (centerX + (Math.random() - 0.5) * 30);
+            const hz = (currentDirIdx % 2 !== 0) ? (centerZ + (Math.random() - 0.5) * 10) : (centerZ + (Math.random() - 0.5) * 30);
+            placeFloatingHeart(hx, Math.random() * 4 + 2, hz);
+        }
+
+        // Add Balloons on Walls? (Simple placement near art spots)
+        // Add NPCs
+        if (Math.random() > 0.3) {
+            // Use the calculated bounds for this corridor segment
+            // We just pushed it to segments
+            const lastSeg = segments[segments.length - 1];
+            createNPC(lastSeg.bounds, scene);
         }
 
         // Advance Current Position to end of corridor
@@ -760,10 +844,6 @@ function generateAndBuildGallery(scene, userMedia) {
         }
     }
 
-    // Init Floating Hearts for Gallery
-    initFloatingHearts(scene, currentX, currentZ); // Spread them around the generated path? 
-    // Actually better to just scatter them in a volume around the player or fixed points.
-    // Let's scatter them along the generated path segments.
 }
 
 // --- Visual Effects Systems ---
