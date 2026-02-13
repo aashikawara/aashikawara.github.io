@@ -1249,3 +1249,5 @@ function animate() {
 
     // Start animation at the END
     animate();
+
+}
