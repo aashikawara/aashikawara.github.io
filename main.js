@@ -1133,56 +1133,61 @@ function animate() {
             velocity.x *= damping;
             velocity.z *= damping;
 
-            // Gravity
-            velocity.y -= 9.8 * 100.0 * physicsDelta;
+            // Gravity (Removed - user wants strict floor lock)
+            // velocity.y -= 9.8 * 100.0 * physicsDelta;
 
             direction.z = Number(moveForward) - Number(moveBackward);
             direction.x = Number(moveRight) - Number(moveLeft);
             direction.normalize();
 
             // Acceleration
-            // If moving, we add velocity.
-            const speed = 600.0; // Increased base speed slightly to compensate for aggressive damping
+            const speed = 600.0;
             if (moveForward || moveBackward) velocity.z -= direction.z * speed * physicsDelta;
             if (moveLeft || moveRight) velocity.x -= direction.x * speed * physicsDelta;
 
-            // Apply Movement
-            const deltaX = -velocity.x * physicsDelta;
-            const deltaZ = -velocity.z * physicsDelta;
+            // Apply Movement manually to ensure Y is ignored (prevent flying/burrowing)
+            const camDir = new THREE.Vector3();
+            controls.getDirection(camDir); // This is in world space
+            camDir.y = 0;
+            camDir.normalize();
+
+            const sideDir = new THREE.Vector3();
+            sideDir.crossVectors(camDir, new THREE.Vector3(0, 1, 0)).normalize();
+
+            // Calculate raw displacement (world space)
+            // velocity.z moves along camDir
+            // velocity.x moves along sideDir
+            const dispX = (-velocity.z * physicsDelta * camDir.x) + (-velocity.x * physicsDelta * sideDir.x);
+            const dispZ = (-velocity.z * physicsDelta * camDir.z) + (-velocity.x * physicsDelta * sideDir.z);
 
             // Store previous position for collision rollback
             const oldPos = controls.object.position.clone();
 
-            controls.moveRight(deltaX);
-            controls.moveForward(deltaZ);
+            controls.object.position.x += dispX;
+            controls.object.position.z += dispZ;
 
             const newPos = controls.object.position;
 
-            // Force ground level (simple gravity floor)
-            if (newPos.y < 2) {
-                velocity.y = 0;
-                newPos.y = 2; // Eye level
-            }
+            // Force ground level (Strict Lock as in previous version)
+            newPos.y = 4.0;
+            velocity.y = 0;
 
             // Collision Check
             if (!checkCollision(newPos)) {
-                // Collision detected!
-                // Attempt to undo X and Z independently to slide along walls.
-
                 // Revert BOTH first
                 controls.object.position.copy(oldPos);
 
                 // Try moving ONLY X
-                controls.moveRight(deltaX);
+                controls.object.position.x += dispX;
                 if (!checkCollision(controls.object.position)) {
                     // X invalid. Revert X.
-                    controls.object.position.copy(oldPos);
+                    controls.object.position.x = oldPos.x;
 
                     // Try moving ONLY Z
-                    controls.moveForward(deltaZ);
+                    controls.object.position.z += dispZ;
                     if (!checkCollision(controls.object.position)) {
                         // Z also invalid. Revert Z. Stuck/Corner.
-                        controls.object.position.copy(oldPos);
+                        controls.object.position.z = oldPos.z;
                         velocity.x = 0;
                         velocity.z = 0;
                     } else {
@@ -1190,7 +1195,7 @@ function animate() {
                         velocity.x = 0;
                     }
                 } else {
-                    // X valid. 
+                    // X valid. Slide along X.
                     velocity.z = 0;
                 }
             }
