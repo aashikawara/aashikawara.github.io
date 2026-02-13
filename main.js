@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
 
 // --- State ---
 const state = {
@@ -43,6 +47,40 @@ audioControl.addEventListener('click', () => {
     isPlaying = !isPlaying;
 });
 
+// --- Audio Reactive System ---
+let audioAnalyser;
+let dataArray;
+function setupAudioReaction() {
+    if (bgMusic && !audioAnalyser) {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            const source = audioCtx.createMediaElementSource(bgMusic);
+            audioAnalyser = audioCtx.createAnalyser();
+            audioAnalyser.fftSize = 64;
+            source.connect(audioAnalyser);
+            audioAnalyser.connect(audioCtx.destination);
+            dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+        } catch (e) {
+            console.warn("Audio analysis failed:", e);
+        }
+    }
+}
+
+const hr = document.getElementById('heart-rain');
+if (hr) {
+    for (let i = 0; i < 20; i++) {
+        const heart = document.createElement('div');
+        heart.className = 'falling-heart';
+        heart.innerHTML = '❤️';
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.animationDuration = Math.random() * 3 + 2 + 's';
+        heart.style.opacity = Math.random() * 0.5 + 0.1;
+        heart.style.fontSize = Math.random() * 20 + 10 + 'px';
+        hr.appendChild(heart);
+    }
+}
+
 // --- Three.js Setup ---
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050505);
@@ -51,10 +89,30 @@ scene.fog = new THREE.FogExp2(0x050505, 0.002);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.z = 5;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
+renderer.toneMapping = THREE.ReinhardToneMapping;
 sceneContainer.appendChild(renderer.domElement);
+
+// --- Post-Processing (Bloom) ---
+const renderScene = new RenderPass(scene, camera);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+bloomPass.threshold = 0.2;
+bloomPass.strength = 0.6; // Subtle cinematic glow
+bloomPass.radius = 0.5;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(renderScene);
+composer.addPass(bloomPass);
+
+// --- Window Resize ---
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    composer.setSize(window.innerWidth, window.innerHeight);
+});
 
 // --- Content ---
 
@@ -301,6 +359,7 @@ yesBtn.addEventListener('click', () => {
     if (!isGalleryActive) {
         setTimeout(() => {
             document.getElementById('love-overlay').classList.add('hidden');
+            setupAudioReaction(); // Init audio analysis
             initGallery();
         }, 4000); // 4 seconds of love
     }
@@ -407,6 +466,56 @@ function checkCollision(position) {
     return false;
 }
 
+// --- Dust Motes System ---
+let dustMotes;
+function initDustMotes(scene) {
+    const geo = new THREE.BufferGeometry();
+    const count = 2000;
+    const pos = new Float32Array(count * 3);
+    const vel = new Float32Array(count * 3);
+
+    for (let i = 0; i < count * 3; i += 3) {
+        pos[i] = (Math.random() - 0.5) * 200;
+        pos[i + 1] = Math.random() * 20;
+        pos[i + 2] = (Math.random() - 0.5) * 200;
+
+        vel[i] = (Math.random() - 0.5) * 0.02;
+        vel[i + 1] = (Math.random() - 0.5) * 0.02;
+        vel[i + 2] = (Math.random() - 0.5) * 0.02;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+
+    const mat = new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.05,
+        transparent: true,
+        opacity: 0.4,
+        blending: THREE.AdditiveBlending
+    });
+
+    dustMotes = new THREE.Points(geo, mat);
+    dustMotes.userData.velocities = vel;
+    scene.add(dustMotes);
+}
+
+function animateDustMotes() {
+    if (!dustMotes) return;
+    const pos = dustMotes.geometry.attributes.position.array;
+    const vel = dustMotes.userData.velocities;
+
+    for (let i = 0; i < pos.length; i += 3) {
+        pos[i] += vel[i];
+        pos[i + 1] += vel[i + 1];
+        pos[i + 2] += vel[i + 2];
+
+        // Simple bounds wrapping
+        if (Math.abs(pos[i]) > 100) pos[i] *= -0.99;
+        if (pos[i + 1] < 0 || pos[i + 1] > 20) vel[i + 1] *= -1;
+        if (Math.abs(pos[i + 2]) > 100) pos[i + 2] *= -0.99;
+    }
+    dustMotes.geometry.attributes.position.needsUpdate = true;
+}
+
 function createVisitor(x, z, scene) {
     const geometry = new THREE.CapsuleGeometry(0.5, 1.8, 4, 8);
     const material = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
@@ -482,7 +591,11 @@ function generateAndBuildGallery(scene, userMedia) {
     heartShape.bezierCurveTo(x + 1.6, y + 0.7, x + 1.6, y, x + 1.0, y);
     heartShape.bezierCurveTo(x + 0.7, y, x + 0.5, y + 0.5, x + 0.5, y + 0.5);
     const heartGeo = new THREE.ExtrudeGeometry(heartShape, { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 });
-    const heartMat = new THREE.MeshStandardMaterial({ color: 0xff69b4, emissive: 0xff1493, emissiveIntensity: 0.5 });
+    const heartMat = new THREE.MeshStandardMaterial({
+        color: 0xff69b4,
+        emissive: 0xff1493,
+        emissiveIntensity: 1.5 // Increased for Bloom
+    });
 
     function placeFloatingHeart(x, y, z) {
         const mesh = new THREE.Mesh(heartGeo, heartMat);
@@ -496,8 +609,26 @@ function generateAndBuildGallery(scene, userMedia) {
 
     // Helpers
     function buildBox(x, y, z, w, h, d, mat) {
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
-        mesh.position.set(x, y, z);
+        let mesh;
+        // Check if this is a floor box and we want reflections
+        const isFloor = Math.abs(y) < 0.5 && h < 1.0;
+
+        if (isFloor && isGalleryActive) {
+            // Use Reflector for floor
+            mesh = new Reflector(new THREE.PlaneGeometry(w, d), {
+                clipBias: 0.003,
+                textureWidth: window.innerWidth * window.devicePixelRatio,
+                textureHeight: window.innerHeight * window.devicePixelRatio,
+                color: 0x333333,
+                recursion: 1
+            });
+            mesh.position.set(x, y, z);
+            mesh.rotation.x = -Math.PI / 2;
+        } else {
+            mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+            mesh.position.set(x, y, z);
+        }
+
         if (mat !== ceilingMat) mesh.receiveShadow = true;
         scene.add(mesh);
         return mesh;
@@ -1058,6 +1189,11 @@ function initGalleryRoom() {
 
         // --- Execute Procedural Generation ---
         generateAndBuildGallery(scene, userMedia);
+        initDustMotes(scene); // Add atmosphere
+
+        // Hide 2D Heart Rain for performance
+        const hr = document.getElementById('heart-rain');
+        if (hr) hr.style.display = 'none';
 
         // Set initial player position
         // Start of first corridor is roughly 0,0,20 to 0,0,-20.
@@ -1261,17 +1397,37 @@ function animate() {
         // Animate Floating Hearts (Gallery)
         if (isGalleryActive) {
             const time = clock.getElapsedTime();
+
+            // Audio Reactive Scaling
+            let audioPulse = 1.0;
+            if (audioAnalyser) {
+                audioAnalyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+                const avg = sum / dataArray.length;
+                audioPulse = 1.0 + (avg / 255.0) * 0.3;
+                bloomPass.strength = 0.6 + (avg / 255.0) * 0.4;
+            }
+
             floatingHearts.forEach(heart => {
                 heart.mesh.rotation.y += heart.speed;
                 heart.mesh.position.y += Math.sin(time + heart.yOffset) * 0.005;
+
+                // Pulse size with music
+                const baseScale = 0.3;
+                heart.mesh.scale.set(baseScale * audioPulse, baseScale * audioPulse, baseScale * audioPulse);
             });
         }
+
+        // Animate Effects
+        animateDustMotes();
 
         // Common Updates (Particles)
         particlesMesh.rotation.y = clock.getElapsedTime() * 0.05;
         particlesMesh.rotation.x = clock.getElapsedTime() * 0.02;
 
-        renderer.render(scene, camera);
+        // Render with Bloom
+        composer.render();
     }
 }
 
