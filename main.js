@@ -912,6 +912,7 @@ function generateAndBuildGallery(scene, userMedia) {
 
             textMesh.position.set(px, wallHeight / 2, pz);
             textMesh.rotation.y = ry;
+            textMesh.scale.x = -1; // Force flip to fix mirror image
             scene.add(textMesh);
         }
     }
